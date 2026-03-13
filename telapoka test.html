@@ -1381,7 +1381,7 @@
                 <div id="game-light-r" class="light-unit green"></div>
             </div>
 
-            <button class="light-toggle-btn" onclick="toggleGameLight()">Initiate Detection</button>
+            <!-- <button class="light-toggle-btn" onclick="toggleGameLight()">Initiate Detection</button> -->
         </div>
 
         <!-- STAGE 7: GAME 1 RESULTS -->
@@ -2264,11 +2264,32 @@
         function update() {
             stages.forEach((el, i) => { el.classList.toggle('active', i === currentIdx); });
 
+            if (currentIdx === 0) {
+                pinkSoldiersAudio.play().catch(e => console.log("Audio play failed:", e));
+            } else {
+                if (typeof pinkSoldiersAudio !== 'undefined') {
+                    pinkSoldiersAudio.pause();
+                    pinkSoldiersAudio.currentTime = 0;
+                }
+            }
+
             if (currentIdx === 5 || currentIdx === 10 || currentIdx === 13) {
                 masterBody.classList.add('stage-bright-active');
             } else {
                 masterBody.classList.remove('stage-bright-active');
                 stopHeartbeat();
+            }
+
+            if (currentIdx === 5) {
+                const lightL = document.getElementById('game-light-l');
+                if (lightL && lightL.classList.contains('green')) {
+                    redLightAudio.play().catch(e => console.log("Audio play failed:", e));
+                }
+            } else {
+                if (typeof redLightAudio !== 'undefined') {
+                    redLightAudio.pause();
+                    redLightAudio.currentTime = 0;
+                }
             }
 
             if (currentIdx === 10) createAirplanes();
@@ -2297,6 +2318,12 @@
             } catch (err) { console.log("Fullscreen not supported."); }
         }
 
+        const pinkSoldiersAudio = new Audio('audio/Pink_Soldiers.mp3');
+        pinkSoldiersAudio.loop = true;
+
+        const redLightAudio = new Audio('audio/red_light_green_light.mp3');
+        redLightAudio.loop = true;
+
         function toggleGameLight() {
             const lightL = document.getElementById('game-light-l');
             const lightR = document.getElementById('game-light-r');
@@ -2305,11 +2332,14 @@
                 lightL.classList.replace('green', 'red');
                 lightR.classList.replace('green', 'red');
                 doll.classList.replace('is-green', 'is-red');
+                redLightAudio.pause();
+                redLightAudio.currentTime = 0;
                 startHeartbeat();
             } else if (lightL) {
                 lightL.classList.replace('red', 'green');
                 lightR.classList.replace('red', 'green');
                 doll.classList.replace('is-red', 'is-green');
+                redLightAudio.play().catch(e => console.log("Audio play failed:", e));
                 stopHeartbeat();
             }
         }
