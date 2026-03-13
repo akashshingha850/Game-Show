@@ -1300,10 +1300,10 @@
             </div>
 
             <div class="stage-6-layout">
-                <div id="game-light-l" class="light-unit green"></div>
+                <div id="game-light-l" class="light-unit red"></div>
 
                 <div class="doll-wrapper">
-                    <div id="doll-target" class="doll-container is-green">
+                    <div id="doll-target" class="doll-container is-red">
                         <div class="doll-side doll-front">
                             <svg viewBox="0 0 300 600" width="100%" height="100%">
                                 <defs>
@@ -1378,7 +1378,7 @@
                     </div>
                 </div>
 
-                <div id="game-light-r" class="light-unit green"></div>
+                <div id="game-light-r" class="light-unit red"></div>
             </div>
 
             <!-- <button class="light-toggle-btn" onclick="toggleGameLight()">Initiate Detection</button> -->
@@ -2277,7 +2277,9 @@
                 masterBody.classList.add('stage-bright-active');
             } else {
                 masterBody.classList.remove('stage-bright-active');
-                stopHeartbeat();
+                if (currentIdx !== 5) {
+                   stopHeartbeat();
+                }
             }
 
             if (currentIdx === 5) {
@@ -2324,6 +2326,8 @@
         const redLightAudio = new Audio('audio/red_light_green_light.mp3');
         redLightAudio.loop = true;
 
+        let hasPlayedGreenLightOnce = false;
+
         function toggleGameLight() {
             const lightL = document.getElementById('game-light-l');
             const lightR = document.getElementById('game-light-r');
@@ -2334,8 +2338,12 @@
                 doll.classList.replace('is-green', 'is-red');
                 redLightAudio.pause();
                 redLightAudio.currentTime = 0;
-                startHeartbeat();
+                
+                if (hasPlayedGreenLightOnce) {
+                    startHeartbeat();
+                }
             } else if (lightL) {
+                hasPlayedGreenLightOnce = true;
                 lightL.classList.replace('red', 'green');
                 lightR.classList.replace('red', 'green');
                 doll.classList.replace('is-red', 'is-green');
