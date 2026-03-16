@@ -1740,10 +1740,10 @@
             </div>
 
             <div class="stage-6-layout">
-                <div id="game-light-l" class="light-unit green"></div>
+                <div id="game-light-l" class="light-unit red"></div>
 
                 <div class="doll-wrapper">
-                    <div id="doll-target" class="doll-container is-green">
+                    <div id="doll-target" class="doll-container is-red">
                         <div class="doll-side doll-front">
                             <svg viewBox="0 0 300 600" width="100%" height="100%">
                                 <defs>
@@ -1818,7 +1818,7 @@
                     </div>
                 </div>
 
-                <div id="game-light-r" class="light-unit green"></div>
+                <div id="game-light-r" class="light-unit red"></div>
             </div>
 
             <button class="light-toggle-btn" onclick="toggleGameLight()">Initiate Detection</button>
@@ -1886,7 +1886,7 @@
                 <h3 class="text-xl font-bold tracking-[0.4em] text-white/40 mb-2 uppercase italic">Phase Two</h3>
                 <h1 class="text-5xl md:text-7xl font-black neon-pink uppercase tracking-tighter mb-4">DIVISION PROTOCOL
                 </h1>
-                <p class="text-xl md:text-2xl font-bold text-white/60 uppercase">~50 Players Qualified <span
+                <p class="text-xl md:text-2xl font-bold text-white/60 uppercase"> Qualified Players <span
                         class="mx-4 text-white/10">→</span> <span class="text-white">5 GROUPS</span></p>
             </div>
 
@@ -2519,6 +2519,7 @@
         let celebrationInterval;
         let currentStageAudio = null;
         let roundAndRoundAudio = null;
+        let game1GreenAudio = null;
 
         // Stage audio placeholders. Stage 0 intentionally has no audio track.
         const stageAudioPlaceholders = Array.from({ length: stages.length }, (_, idx) => (
@@ -2537,6 +2538,11 @@
         roundAndRoundAudio.preload = 'auto';
         roundAndRoundAudio.loop = true;
 
+        // Dedicated audio for Game 1 green-light phase
+        game1GreenAudio = new Audio('audio/red_light_green_light.mp3');
+        game1GreenAudio.preload = 'auto';
+        game1GreenAudio.loop = true;
+
         function getMasterVolume() {
             return parseFloat(document.getElementById('volume-slider').value) || 1;
         }
@@ -2547,9 +2553,62 @@
                 if (audio) audio.volume = vol;
             });
             if (roundAndRoundAudio) roundAndRoundAudio.volume = vol;
+            if (game1GreenAudio) game1GreenAudio.volume = vol;
+        }
+
+        function isGame1LightStageActive() {
+            const doll = document.getElementById('doll-target');
+            return !!(doll && stages[currentIdx] && stages[currentIdx].contains(doll));
+        }
+
+        function syncGame1LightAudio() {
+            if (!isGame1LightStageActive()) {
+                if (game1GreenAudio) {
+                    game1GreenAudio.pause();
+                    game1GreenAudio.currentTime = 0;
+                }
+                return;
+            }
+
+            const doll = document.getElementById('doll-target');
+            const isGreen = doll && doll.classList.contains('is-green');
+
+            if (isGreen) {
+                stopHeartbeat();
+                if (game1GreenAudio) {
+                    game1GreenAudio.volume = getMasterVolume();
+                    if (game1GreenAudio.paused) {
+                        game1GreenAudio.currentTime = 0;
+                        const p = game1GreenAudio.play();
+                        if (p && typeof p.catch === 'function') p.catch(() => { });
+                    }
+                }
+            } else {
+                if (game1GreenAudio) {
+                    game1GreenAudio.pause();
+                    game1GreenAudio.currentTime = 0;
+                }
+                startHeartbeat();
+            }
         }
 
         function playStageAudioForCurrentSlide() {
+            // Stage 7 uses custom light-state audio: green track + red heartbeat.
+            if (isGame1LightStageActive()) {
+                if (currentStageAudio) {
+                    currentStageAudio.pause();
+                    currentStageAudio.currentTime = 0;
+                    currentStageAudio = null;
+                }
+                syncGame1LightAudio();
+                return;
+            }
+
+            if (game1GreenAudio) {
+                game1GreenAudio.pause();
+                game1GreenAudio.currentTime = 0;
+            }
+
             const targetAudio = stageAudioElements[currentIdx];
 
             // No stage audio for this index (stage 0), or placeholder not assigned.
@@ -3030,6 +3089,17 @@
 
         function update() {
             stages.forEach((el, i) => { el.classList.toggle('active', i === currentIdx); });
+
+            // Always enter Game 1 stage in RED state.
+            if (isGame1LightStageActive()) {
+                const lightL = document.getElementById('game-light-l');
+                const lightR = document.getElementById('game-light-r');
+                const doll = document.getElementById('doll-target');
+                if (lightL) { lightL.classList.remove('green'); lightL.classList.add('red'); }
+                if (lightR) { lightR.classList.remove('green'); lightR.classList.add('red'); }
+                if (doll) { doll.classList.remove('is-green'); doll.classList.add('is-red'); }
+            }
+
             playStageAudioForCurrentSlide();
 
             // Bright Mode controlled by data attribute on stage element
@@ -3090,6 +3160,7 @@
                 doll.classList.replace('is-red', 'is-green');
                 stopHeartbeat();
             }
+            syncGame1LightAudio();
         }
 
         window.addEventListener('keydown', (e) => {
@@ -3101,9 +3172,14 @@
                 }
                 return;
             }
-            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'Enter') moveNext();
+            if (e.key === ' ' && isGame1LightStageActive()) {
+                e.preventDefault();
+                toggleGameLight();
+                return;
+            }
+            if (e.key === 'ArrowRight' ) moveNext(); // || e.key === 'Enter' || e.key === ' ' 
             if (e.key === 'ArrowLeft') movePrev();
-            if (e.key.toLowerCase() === 'l' && currentIdx === 7) toggleGameLight();
+            if (e.key.toLowerCase() === 'l' && isGame1LightStageActive()) toggleGameLight();
         });
 
         document.getElementById('volume-slider').addEventListener('input', syncStageAudioVolume);
