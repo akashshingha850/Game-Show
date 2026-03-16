@@ -1277,7 +1277,7 @@
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
             <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
         </svg>
-        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="0.5">
+        <input type="range" id="volume-slider" min="0" max="1" step="0.01" value="1">
     </div>
 
     <button id="fullscreen-trigger" onclick="toggleFull()">Full Screen Script</button>
@@ -1297,8 +1297,15 @@
 
     <div id="interactive-script">
 
+        <!-- STAGE 0: BLACK HOLD -->
+        <div class="stage active" style="background: #000000;">
+            <div class="text-center">
+                <p class="text-xl font-black tracking-[0.5em] text-white/20 uppercase"></p>
+            </div>
+        </div>
+
         <!-- STAGE 1: ATMOSPHERE -->
-        <div class="stage active overflow-hidden">
+        <div class="stage overflow-hidden">
             <div class="shape-decor triangle pulse-icon" style="top: 10%; right: 10%; opacity: 0.1;"></div>
             <div class="shape-decor circle pulse-icon" style="bottom: 10%; left: 10%; opacity: 0.1;"></div>
 
@@ -1654,7 +1661,7 @@
             </div>
         </div>
 
-        <!-- STAGE: CHALLENGE 01 INTRO & RULES -->
+        <!-- STAGE 6: CHALLENGE 01 INTRO & RULES -->
         <div class="stage">
             <div class="shape-decor triangle" style="top: 15%; right: 10%;"></div>
             <div class="shape-decor circle" style="bottom: 20%; left: 10%;"></div>
@@ -1721,7 +1728,7 @@
         </div>
 
         <!-- STAGE 7: THE DOLL PROTOCOL -->
-        <div class="stage">
+        <div class="stage" data-bright="true">
             <div class="shape-decor circle" style="top: 10%; right: 10%; opacity: 0.1;"></div>
             <div class="shape-decor square" style="bottom: 10%; left: 10%; opacity: 0.1;"></div>
 
@@ -2093,7 +2100,7 @@
         </div>
 
         <!-- STAGE 12: GAME 2 - WRIGHT BROTHERS (STOPWATCH) -->
-        <div class="stage overflow-hidden">
+        <div class="stage overflow-hidden" data-bright="true">
             <div id="airplane-container" class="absolute inset-0 pointer-events-none"></div>
 
             <div class="text-center z-10">
@@ -2214,7 +2221,7 @@
         </div>
 
         <!-- STAGE 15: GAME 3 - SILENT LANGUAGE GAMEPLAY -->
-        <div class="stage">
+        <div class="stage" data-bright="true">
             <!-- PINK ATMOSPHERE ELEMENTS -->
             <div class="shape-decor circle pulse-icon"
                 style="top: 5%; right: 5%; border-color: rgba(255, 0, 127, 0.3);"></div>
@@ -2510,10 +2517,63 @@
         let audioCtx;
         let heartbeatLoop;
         let celebrationInterval;
+        let currentStageAudio = null;
+
+        // Stage audio placeholders. Stage 0 intentionally has no audio track.
+        const stageAudioPlaceholders = Array.from({ length: stages.length }, (_, idx) => (
+            idx === 0 ? null : `audio/stage-${idx}.mp3`
+        ));
+        const stageAudioElements = stageAudioPlaceholders.map((src) => {
+            if (!src) return null;
+            const audio = new Audio(src);
+            audio.preload = 'none';
+            audio.loop = true;
+            return audio;
+        });
+
+        function getMasterVolume() {
+            return parseFloat(document.getElementById('volume-slider').value) || 1;
+        }
+
+        function syncStageAudioVolume() {
+            const vol = getMasterVolume();
+            stageAudioElements.forEach((audio) => {
+                if (audio) audio.volume = vol;
+            });
+        }
+
+        function playStageAudioForCurrentSlide() {
+            const targetAudio = stageAudioElements[currentIdx];
+
+            // No stage audio for this index (stage 0), or placeholder not assigned.
+            if (!targetAudio) {
+                if (currentStageAudio) {
+                    currentStageAudio.pause();
+                    currentStageAudio.currentTime = 0;
+                    currentStageAudio = null;
+                }
+                return;
+            }
+
+            if (currentStageAudio && currentStageAudio !== targetAudio) {
+                currentStageAudio.pause();
+                currentStageAudio.currentTime = 0;
+            }
+
+            currentStageAudio = targetAudio;
+            currentStageAudio.currentTime = 0;
+            currentStageAudio.volume = getMasterVolume();
+            const playPromise = currentStageAudio.play();
+            if (playPromise && typeof playPromise.catch === 'function') {
+                playPromise.catch(() => {
+                    // Browser autoplay policies may block playback until user interaction.
+                });
+            }
+        }
 
         function playThump(freq, duration, volume) {
             if (!audioCtx) return;
-            const masterVol = parseFloat(document.getElementById('volume-slider').value) || 0.5;
+            const masterVol = getMasterVolume();
             const finalVolume = volume * masterVol;
 
             const osc = audioCtx.createOscillator();
@@ -2944,9 +3004,11 @@
 
         function update() {
             stages.forEach((el, i) => { el.classList.toggle('active', i === currentIdx); });
+            playStageAudioForCurrentSlide();
 
-            // Adjusted Indices for Bright Mode Background
-            if (currentIdx === 7 || currentIdx === 12 || currentIdx === 15) {
+            // Bright Mode controlled by data attribute on stage element
+            const activeStageEl = stages[currentIdx];
+            if (activeStageEl && activeStageEl.dataset.bright === 'true') {
                 masterBody.classList.add('stage-bright-active');
             } else {
                 masterBody.classList.remove('stage-bright-active');
@@ -3018,7 +3080,12 @@
             if (e.key.toLowerCase() === 'l' && currentIdx === 7) toggleGameLight();
         });
 
-        document.addEventListener('DOMContentLoaded', update);
+        document.getElementById('volume-slider').addEventListener('input', syncStageAudioVolume);
+
+        document.addEventListener('DOMContentLoaded', () => {
+            syncStageAudioVolume();
+            update();
+        });
     </script>
 </body>
 
