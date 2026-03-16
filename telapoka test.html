@@ -1781,13 +1781,13 @@
                                 <rect x="110" y="480" width="30" height="80" fill="#fce4d0" />
                                 <rect x="160" y="480" width="30" height="80" fill="#fce4d0" />
                                 <g>
-                                    <rect x="110" y="510" width="30" height="50" fill="white" />
+                                    <rect x="110" y="510" width="30" height="50" fill="#fce4d0" />
                                     <path d="M110 515 H140 M110 525 H140 M110 535 H140 M110 545 H140" stroke="red"
                                         stroke-width="3" />
                                 </g>
                                 <g>
-                                    <rect x="160" y="510" width="30" height="50" fill="white" />
-                                    <path d="M160 515 H190 Pantomime 525 H190 M160 535 H190 M160 545 H190" stroke="red"
+                                    <rect x="160" y="510" width="30" height="50" fill="#fce4d0" />
+                                    <path d="M160 515 H190 M160 525 H190 M160 535 H190 M160 545 H190" stroke="red"
                                         stroke-width="3" />
                                 </g>
                                 <rect x="100" y="560" width="45" height="25" rx="10" fill="#111" />
@@ -1809,8 +1809,8 @@
                                     opacity="0.3" />
                                 <path d="M220 235 L245 330" stroke="#ffcc00" stroke-width="20" stroke-linecap="round"
                                     opacity="0.3" />
-                                <ellipse cx="50" cy="340" rx="12" ry="18" fill="#e1b694" />
-                                <ellipse cx="250" cy="340" rx="12" ry="18" fill="#e1b694" />
+                                <ellipse cx="50" cy="340" rx="12" ry="18" fill="#fce4d0" />
+                                <ellipse cx="250" cy="340" rx="12" ry="18" fill="#fce4d0" />
                                 <rect x="100" y="560" width="45" height="25" rx="10" fill="#111" />
                                 <rect x="155" y="560" width="45" height="25" rx="10" fill="#111" />
                             </svg>
@@ -2518,6 +2518,7 @@
         let heartbeatLoop;
         let celebrationInterval;
         let currentStageAudio = null;
+        let roundAndRoundAudio = null;
 
         // Stage audio placeholders. Stage 0 intentionally has no audio track.
         const stageAudioPlaceholders = Array.from({ length: stages.length }, (_, idx) => (
@@ -2531,6 +2532,11 @@
             return audio;
         });
 
+        // Dedicated audio for Game 2 stopwatch background
+        roundAndRoundAudio = new Audio('audio/round_and_round.mp3');
+        roundAndRoundAudio.preload = 'auto';
+        roundAndRoundAudio.loop = true;
+
         function getMasterVolume() {
             return parseFloat(document.getElementById('volume-slider').value) || 1;
         }
@@ -2540,6 +2546,7 @@
             stageAudioElements.forEach((audio) => {
                 if (audio) audio.volume = vol;
             });
+            if (roundAndRoundAudio) roundAndRoundAudio.volume = vol;
         }
 
         function playStageAudioForCurrentSlide() {
@@ -2635,10 +2642,17 @@
 
         function toggleTimer() {
             const btn = document.getElementById('timer-toggle');
+            const stopwatchEl = document.getElementById('stopwatch');
+            const isStopwatchVisible = stopwatchEl && stages[currentIdx] && stages[currentIdx].contains(stopwatchEl);
+
             if (isTimerRunning) {
                 clearInterval(timerInterval);
                 btn.textContent = 'Resume Protocol';
                 btn.classList.remove('active');
+
+                if (roundAndRoundAudio && !roundAndRoundAudio.paused) {
+                    roundAndRoundAudio.pause();
+                }
             } else {
                 timerInterval = setInterval(() => {
                     if (timeRemaining > 0) {
@@ -2648,10 +2662,21 @@
                         clearInterval(timerInterval);
                         isTimerRunning = false;
                         btn.textContent = 'Mission Complete';
+                        if (roundAndRoundAudio) {
+                            roundAndRoundAudio.pause();
+                            roundAndRoundAudio.currentTime = 0;
+                        }
                     }
                 }, 1000);
                 btn.textContent = 'Pause Protocol';
                 btn.classList.add('active');
+
+                if (isStopwatchVisible && roundAndRoundAudio) {
+                    roundAndRoundAudio.currentTime = 0;
+                    roundAndRoundAudio.volume = getMasterVolume();
+                    const p = roundAndRoundAudio.play();
+                    if (p && typeof p.catch === 'function') p.catch(() => {});
+                }
             }
             isTimerRunning = !isTimerRunning;
         }
@@ -2663,6 +2688,7 @@
             updateTimerDisplay();
             const btn = document.getElementById('timer-toggle');
             if (btn) { btn.textContent = 'Start Protocol'; btn.classList.remove('active'); }
+            if (roundAndRoundAudio) { roundAndRoundAudio.pause(); roundAndRoundAudio.currentTime = 0; }
         }
 
         // Leaderboard Logic
