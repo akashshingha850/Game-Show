@@ -2520,6 +2520,7 @@
         let currentStageAudio = null;
         let roundAndRoundAudio = null;
         let game1GreenAudio = null;
+        let game2SortSfx = null;
 
         // Stage audio placeholders. Stage 0 intentionally has no audio track.
         const stageAudioPlaceholders = Array.from({ length: stages.length }, (_, idx) => (
@@ -2543,6 +2544,11 @@
         game1GreenAudio.preload = 'auto';
         game1GreenAudio.loop = true;
 
+        // One-shot SFX for Game 2 standings sort action
+        game2SortSfx = new Audio('audio/faah.mp3');
+        game2SortSfx.preload = 'auto';
+        game2SortSfx.loop = false;
+
         function getMasterVolume() {
             return parseFloat(document.getElementById('volume-slider').value) || 1;
         }
@@ -2554,6 +2560,7 @@
             });
             if (roundAndRoundAudio) roundAndRoundAudio.volume = vol;
             if (game1GreenAudio) game1GreenAudio.volume = vol;
+            if (game2SortSfx) game2SortSfx.volume = vol;
         }
 
         function isGame1LightStageActive() {
@@ -2768,6 +2775,13 @@
             if (shouldSort) {
                 leaderboardData.sort((a, b) => b.score - a.score);
                 qualifiedTeams = leaderboardData.slice(0, 3).map(d => d.name);
+
+                if (game2SortSfx) {
+                    game2SortSfx.currentTime = 0;
+                    game2SortSfx.volume = getMasterVolume();
+                    const p = game2SortSfx.play();
+                    if (p && typeof p.catch === 'function') p.catch(() => { });
+                }
             }
 
             container.innerHTML = leaderboardData.map((data, rankIdx) => {
