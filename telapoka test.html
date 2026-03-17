@@ -782,6 +782,14 @@
             color: white;
         }
 
+        /* Keep the Game 3 timer toggle from turning fully pink when active */
+        #game3-timer-toggle.active {
+            background: transparent !important;
+            color: #FF007F !important;
+            border-color: #FF007F !important;
+            box-shadow: none !important;
+        }
+
         /* RESULTS TABLE STYLES */
         .results-container {
             width: 100%;
@@ -2549,6 +2557,11 @@
         game2SortSfx.preload = 'auto';
         game2SortSfx.loop = false;
 
+        // One-shot SFX for Game 3 point increments
+        const mimicPointAudio = new Audio('audio/huh.mp3');
+        mimicPointAudio.preload = 'auto';
+        mimicPointAudio.loop = false;
+
         function getMasterVolume() {
             return parseFloat(document.getElementById('volume-slider').value) || 1;
         }
@@ -2881,12 +2894,26 @@
                         <input type="number" 
                                class="game3-input" 
                                value="${game3Scores[i]}" 
-                               oninput="game3Scores[${i}] = parseInt(this.value) || 0"
+                               oninput="handleGame3ScoreInput(${i}, this)"
                                onfocus="this.select()"
                         >
                     </td>
                 </tr>
             `).join('');
+        }
+
+        function handleGame3ScoreInput(idx, el) {
+            const newVal = parseInt(el.value) || 0;
+            const prev = game3Scores[idx] || 0;
+            game3Scores[idx] = newVal;
+            if (newVal > prev) {
+                if (mimicPointAudio) {
+                    mimicPointAudio.volume = getMasterVolume();
+                    mimicPointAudio.currentTime = 0;
+                    const p = mimicPointAudio.play();
+                    if (p && typeof p.catch === 'function') p.catch(() => {});
+                }
+            }
         }
 
         function setupGame4Logging() {
@@ -3000,7 +3027,13 @@
                 card.classList.add('strike-fade');
                 card.classList.add('eliminated');
                 prompt.textContent = "ELIMINATED";
-                playThump(40, 0.8, 1);
+                    playThump(40, 0.8, 1);
+                    if (game2SortSfx) {
+                        game2SortSfx.currentTime = 0;
+                        game2SortSfx.volume = getMasterVolume();
+                        const p = game2SortSfx.play();
+                        if (p && typeof p.catch === 'function') p.catch(() => {});
+                    }
 
                 setTimeout(() => {
                     card.style.display = 'none';
