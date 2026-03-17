@@ -1,2 +1,23 @@
 *.zip
 # *.mp3
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# OS / Editor temp files
+Thumbs.db
+*~
+*.swp
+.*.swp
+*.tmp
+*.temp
+*.bak
+*.orig
+*.rej
+
+# IDEs
+.vscode/
+.idea/
+
