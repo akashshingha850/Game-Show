@@ -2506,6 +2506,7 @@
         let teamScores = [0, 0, 0, 0, 0];
         let qualifiedTeams = [];
         let game3Scores = [0, 0, 0];
+        let game4Scores = [];
 
         function updateTeamNames(index) {
             const tiles = document.querySelectorAll('.group-tag');
@@ -2929,6 +2930,9 @@
                 return;
             }
 
+            // initialize score array for game 4
+            game4Scores = finalistNames.map(() => 0);
+
             container.innerHTML = finalistNames.map((name, i) => `
                 <tr style="background: rgba(255, 255, 255, 0.02);">
                     <td class="name-box" style="color: white; padding: 30px 20px;">${name}</td>
@@ -2937,11 +2941,26 @@
                                class="game3-input finalist-score-input" 
                                style="background: transparent; color: #FF007F; border-color: rgba(255, 0, 127, 0.3);"
                                placeholder="0"
+                               oninput="handleGame4ScoreInput(${i}, this)"
                                onfocus="this.select()"
                         >
                     </td>
                 </tr>
             `).join('');
+        }
+
+        function handleGame4ScoreInput(idx, el) {
+            const newVal = parseInt(el.value) || 0;
+            const prev = game4Scores[idx] || 0;
+            game4Scores[idx] = newVal;
+            if (newVal > prev) {
+                if (mimicPointAudio) {
+                    mimicPointAudio.volume = getMasterVolume();
+                    mimicPointAudio.currentTime = 0;
+                    const p = mimicPointAudio.play();
+                    if (p && typeof p.catch === 'function') p.catch(() => {});
+                }
+            }
         }
 
         // Stage 15: Mimic Results & Tie Breaker
