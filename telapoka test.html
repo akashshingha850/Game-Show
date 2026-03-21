@@ -3320,8 +3320,8 @@
                 toggleGameLight();
                 return;
             }
-            if (e.key === 'ArrowRight' ) moveNext(); // || e.key === 'Enter' || e.key === ' ' 
-            if (e.key === 'ArrowLeft') movePrev();
+            if (e.key === 'ArrowRight' || e.key === 'ArrowDown') moveNext(); // || e.key === 'Enter' || e.key === ' '
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') movePrev();
             if (e.key.toLowerCase() === 'l' && isGame1LightStageActive()) toggleGameLight();
         });
 
